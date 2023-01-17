@@ -70,3 +70,45 @@ parameters.average_and_std_together = false;
 
 %% Start with categorical
 
+% For each category (couldn't put in interators because of folder names)
+for categoryi = 1:numel(parameters.loop_variables.categories)
+
+    category = parameters.loop_variables.categories{categoryi};
+
+    if isfield(parameters, 'loop_list')
+    parameters = rmfield(parameters,'loop_list');
+    end
+    
+    % Iterators
+    parameters.loop_list.iterators = {
+                   'comparison', {'loop_variables.comparisons_categorical.(category).(:).name'}, 'comparison_iterator' ;    
+                   };
+    
+    % Inputs 
+
+    % Average correlations
+    if strcmp(category, 'normal')
+        parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'PLSR\results\level 2 categorical\Ipsa Contra\'], 'comparison', '\'};
+    else
+        parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'PLSR Warning Periods\results\level 2 categorical\'], 'comparison', '\'};
+    end
+    parameters.loop_list.things_to_load.correlations.filename= {'average_by_nodes_Cov.mat'};
+    parameters.loop_list.things_to_load.correlations.variable= {'average_by_nodes'}; 
+    parameters.loop_list.things_to_load.correlations.level = 'comparison';
+    
+    % Fluorescence
+    if strcmp(category, 'normal')
+        parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence\results\level 2 categorical\'], 'comparison', '\'};
+    else
+        parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence Warning Periods\results\level 2 categorical\'], 'comparison', '\'};
+    end
+    parameters.loop_list.things_to_load.fluorescence.filename= {'average_by_nodes_Cov.mat'};
+    parameters.loop_list.things_to_load.fluorescence.variable= {'average_by_nodes'}; 
+    parameters.loop_list.things_to_load.fluorescence.level = 'comparison';
+   
+    % Outputs
+    
+    RunAnalysis({}, parameters); 
+end
+
+% MAKE SURE YOU ALIGN THE MICE IF THERE AREN'T ALL 7 IN A COMPARISON
