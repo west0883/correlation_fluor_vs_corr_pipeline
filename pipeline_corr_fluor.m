@@ -70,6 +70,11 @@ parameters.average_and_std_together = false;
 
 %% Start with categorical
 
+% Steps needed:
+% Concatenate within mice,
+% Correlate within mice
+% Average across mice
+
 % For each category (couldn't put in interators because of folder names)
 for categoryi = 1:numel(parameters.loop_variables.categories)
 
