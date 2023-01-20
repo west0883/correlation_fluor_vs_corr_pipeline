@@ -59,16 +59,20 @@ end
 
 clear comparisons name i type typei;
 
+parameters.comparisons_categorical_both = [parameters.comparisons_categorical.normal parameters.comparisons_categorical.warningPeriods];
+
 % Names of all continuous variables.
 parameters.continuous_variable_names = {'speed', 'accel', 'duration', 'pupil_diameter'};
 
 % Put relevant variables into loop_variables.
 parameters.loop_variables.mice_all = parameters.mice_all;
 parameters.loop_variables.conditions = {'motorized'; 'spontaneous'};
-
+parameters.loop_variables.data_type = {'corrs'; 'fluors'};
+parameters.loop_variables.comparisons_categorical_both = parameters.comparisons_categorical_both;
 parameters.average_and_std_together = false;
 
 %% reshape level 1 correlation results to not have double representation (16 instead of 32 values, matches fluorescence)
+% also transpose so dimensions match fluorescence
 
 % For each category (couldn't put in interators because of folder names)
 for categoryi = 1:numel(parameters.loop_variables.categories)
@@ -83,7 +87,8 @@ for categoryi = 1:numel(parameters.loop_variables.categories)
     parameters.loop_list.iterators = {
                    'comparison', {'loop_variables.comparisons_categorical.' category '(:).name'}, 'comparison_iterator' ;    
                    };
-    parameters.evaluation_instructions = {'data_evaluated = parameters.data(1:2:end, :);'};
+
+    parameters.evaluation_instructions = {'data_evaluated = transpose(parameters.data(1:2:end, :));'};
 
     % Inputs 
     if strcmp(category, 'normal')
@@ -105,13 +110,9 @@ for categoryi = 1:numel(parameters.loop_variables.categories)
 end 
 
 
-%% Start with categorical
+%% *** Start with categorical only ***
 
-% Steps needed:
-% Concatenate within mice,
-% Correlate within mice
-% Average across mice
-
+%% Pad missing mouse
 % For each category (couldn't put in interators because of folder names)
 for categoryi = 1:numel(parameters.loop_variables.categories)
 
@@ -123,19 +124,20 @@ for categoryi = 1:numel(parameters.loop_variables.categories)
     
     % Iterators
     parameters.loop_list.iterators = {
-                   'comparison', {'loop_variables.comparisons_categorical.(category).(:).name'}, 'comparison_iterator' ;    
+                   'comparison', {'loop_variables.comparisons_categorical.' category '(:).name'}, 'comparison_iterator' ;    
                    };
     
-    % Inputs 
+    % number of mice 
+    parameters.number_of_mice = 7; 
 
+    % placement where mouse 1100 is missing
+    parameters.placement = 4; 
+
+    % Inputs
     % Average correlations
-    % 16 x 7 
-    if strcmp(category, 'normal')
-        parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'PLSR\results\level 2 categorical\Ipsa Contra\'], 'comparison', '\'};
-    else
-        parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'PLSR Warning Periods\results\level 2 categorical\'], 'comparison', '\'};
-    end
-    parameters.loop_list.things_to_load.correlations.filename= {'average_by_nodes_Cov.mat'};
+    % 7 x 16
+    parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'corr fluor\only relevant corrs\' category '\'], 'comparison', '\'};
+    parameters.loop_list.things_to_load.correlations.filename= {'average_by_nodes.mat'};
     parameters.loop_list.things_to_load.correlations.variable= {'average_by_nodes'}; 
     parameters.loop_list.things_to_load.correlations.level = 'comparison';
     
@@ -144,24 +146,86 @@ for categoryi = 1:numel(parameters.loop_variables.categories)
     if strcmp(category, 'normal')
         parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence\variable prep\datasets\level 2 categorical\'], 'comparison', '\'};
     else
-        parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence Warning Periods\results\level 2 categorical\'], 'comparison', '\'};
+        parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence Warning Periods\variable prep\datasets\level 2 categorical\'], 'comparison', '\'};
     end
     parameters.loop_list.things_to_load.fluorescence.filename= {'PLSR_dataset_info_Cov.mat'};
     parameters.loop_list.things_to_load.fluorescence.variable= {'dataset_info.responseVariables'}; 
     parameters.loop_list.things_to_load.fluorescence.level = 'comparison';
-  
-    % Outputs
 
-    % concatenated data across mice
-   
-    % correlations
+    % Outputs 
+    parameters.loop_list.things_to_save.corrs_padded.dir = {[parameters.dir_exper 'corr fluor\data padded\']}; 
+    parameters.loop_list.things_to_save.corrs_padded.filename= {'corrs_padded_', 'comparison', '.mat'};
+    parameters.loop_list.things_to_save.corrs_padded.variable= {'corrs'}; 
+    parameters.loop_list.things_to_save.corrs_padded.level = 'comparison';
 
-   
+    parameters.loop_list.things_to_save.fluors_padded.dir = {[parameters.dir_exper 'corr fluor\data padded\']}; 
+    parameters.loop_list.things_to_save.fluors_padded.filename= {'fluors_padded_', 'comparison', '.mat'};
+    parameters.loop_list.things_to_save.fluors_padded.variable= {'fluors'}; 
+    parameters.loop_list.things_to_save.fluors_padded.level = 'comparison';
 
-    % average correlations across mice
+    RunAnalysis({@PadMissingMouse}, parameters);  
 
-    
-    RunAnalysis({}, parameters); 
 end
 
-% MAKE SURE YOU ALIGN THE MICE IF THERE AREN'T ALL 7 IN A COMPARISON
+%% Concatenate across comparisons
+
+if isfield(parameters, 'loop_list')
+parameters = rmfield(parameters,'loop_list');
+end
+
+% Iterators
+parameters.loop_list.iterators = {
+   'data_type', {'loop_variables.data_type'}, 'data_type_iterator';
+   'comparison', {'loop_variables.comparisons_categorical_both(:).name'}, 'comparison_iterator' ; 
+   };
+
+parameters.concatenation_level = 'comparison'; 
+parameters.concatDim = 3;
+
+% Inputs
+parameters.loop_list.things_to_load.data.dir = {[parameters.dir_exper 'corr fluor\data padded\']}; 
+parameters.loop_list.things_to_load.data.filename= {'data_type', '_padded_', 'comparison', '.mat'};
+parameters.loop_list.things_to_load.data.variable= {'data_type'}; 
+parameters.loop_list.things_to_load.data.level = 'comparison';
+
+% Output
+parameters.loop_list.things_to_save.concatenated_data.dir = {[parameters.dir_exper 'corr fluor\data concatenated across comparisons\categorical\']}; 
+parameters.loop_list.things_to_save.concatenated_data.filename= {'data_type', '_concatenated.mat'};
+parameters.loop_list.things_to_save.concatenated_data.variable= {'data_type'}; 
+parameters.loop_list.things_to_save.concatenated_data.level = 'data_type';
+
+RunAnalysis({@ConcatenateData}, parameters);
+   
+%% Run correlations 
+% Correlate within mice
+% Average across mice
+
+if isfield(parameters, 'loop_list')
+parameters = rmfield(parameters,'loop_list');
+end
+
+% Iterators
+parameters.loop_list.iterators = 'none';
+               
+% Inputs 
+% Correlations
+parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'corr fluor\data concatenated across comparisons\categorical\']}; 
+parameters.loop_list.things_to_load.correlations.filename= {'corrs_concatenated.mat'};
+parameters.loop_list.things_to_load.correlations.variable= {'corrs'}; 
+parameters.loop_list.things_to_load.correlations.level = 'corrs';
+
+% Fluorescence
+parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'corr fluor\data concatenated across comparisons\categorical\']}; 
+parameters.loop_list.things_to_load.fluorescence.filename= {'fluors_concatenated.mat'};
+parameters.loop_list.things_to_load.fluorescence.variable= {'fluors'}; 
+parameters.loop_list.things_to_load.fluorescence.level = 'fluors';
+
+% Outputs
+% correlations per mouse
+parameters.loop_list.things_to_save.corrs_per_mouse.dir = {[parameters.dir_exper 'corr fluor\results\categorical\']}; 
+parameters.loop_list.things_to_save.corrs_per_mouse.filename= {'corrs_per_mouse.mat'};
+parameters.loop_list.things_to_save.corrs_per_mouse.variable= {'corrs_per_mouse'}; 
+parameters.loop_list.things_to_save.corrs_per_mouse.level = 'end';
+
+% average correlations across mice 
+RunAnalysis({@CorrFluor}, parameters); 
