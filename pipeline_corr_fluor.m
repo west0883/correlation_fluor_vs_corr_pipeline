@@ -53,7 +53,7 @@ for i = 1:numel(parameters.loop_variables.categories)
         type = parameters.loop_variables.comparison_types{typei};
         load([parameters.dir_exper 'PLSR\comparisons_' name '_' type '.mat']);
         parameters.(['comparisons_' type]).(category) = comparisons;
-        parameters.loop_variables.(['comparisons_' type]).(category) = parameters.(['comparisons_' type]);
+        parameters.loop_variables.(['comparisons_' type]).category = parameters.(['comparisons_' type]).(category);
     end
 end
 
