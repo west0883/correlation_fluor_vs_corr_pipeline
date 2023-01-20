@@ -129,6 +129,7 @@ for categoryi = 1:numel(parameters.loop_variables.categories)
     % Inputs 
 
     % Average correlations
+    % 16 x 7 
     if strcmp(category, 'normal')
         parameters.loop_list.things_to_load.correlations.dir = {[parameters.dir_exper 'PLSR\results\level 2 categorical\Ipsa Contra\'], 'comparison', '\'};
     else
@@ -139,16 +140,26 @@ for categoryi = 1:numel(parameters.loop_variables.categories)
     parameters.loop_list.things_to_load.correlations.level = 'comparison';
     
     % Fluorescence
+    % 7 x 16
     if strcmp(category, 'normal')
-        parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence\results\level 2 categorical\'], 'comparison', '\'};
+        parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence\variable prep\datasets\level 2 categorical\'], 'comparison', '\'};
     else
         parameters.loop_list.things_to_load.fluorescence.dir = {[parameters.dir_exper 'PLSR fluorescence Warning Periods\results\level 2 categorical\'], 'comparison', '\'};
     end
-    parameters.loop_list.things_to_load.fluorescence.filename= {'average_by_nodes_Cov.mat'};
-    parameters.loop_list.things_to_load.fluorescence.variable= {'average_by_nodes'}; 
+    parameters.loop_list.things_to_load.fluorescence.filename= {'PLSR_dataset_info_Cov.mat'};
+    parameters.loop_list.things_to_load.fluorescence.variable= {'dataset_info.responseVariables'}; 
     parameters.loop_list.things_to_load.fluorescence.level = 'comparison';
-   
+  
     % Outputs
+
+    % concatenated data across mice
+   
+    % correlations
+
+   
+
+    % average correlations across mice
+
     
     RunAnalysis({}, parameters); 
 end
