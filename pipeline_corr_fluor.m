@@ -68,6 +68,43 @@ parameters.loop_variables.conditions = {'motorized'; 'spontaneous'};
 
 parameters.average_and_std_together = false;
 
+%% reshape level 1 correlation results to not have double representation (16 instead of 32 values, matches fluorescence)
+
+% For each category (couldn't put in interators because of folder names)
+for categoryi = 1:numel(parameters.loop_variables.categories)
+
+    category = parameters.loop_variables.categories{categoryi};
+
+    if isfield(parameters, 'loop_list')
+    parameters = rmfield(parameters,'loop_list');
+    end
+    
+    % Iterators
+    parameters.loop_list.iterators = {
+                   'comparison', {'loop_variables.comparisons_categorical.' category '(:).name'}, 'comparison_iterator' ;    
+                   };
+    parameters.evaluation_instructions = {'data_evaluated = parameters.data(1:2:end, :);'};
+
+    % Inputs 
+    if strcmp(category, 'normal')
+        parameters.loop_list.things_to_load.data.dir = {[parameters.dir_exper 'PLSR\results\level 2 categorical\Ipsa Contra\'], 'comparison', '\'};
+    else
+        parameters.loop_list.things_to_load.data.dir = {[parameters.dir_exper 'PLSR Warning Periods\results\level 2 categorical\'], 'comparison', '\'};
+    end
+    parameters.loop_list.things_to_load.data.filename= {'average_by_nodes_Cov.mat'};
+    parameters.loop_list.things_to_load.data.variable= {'average_by_nodes'}; 
+    parameters.loop_list.things_to_load.data.level = 'comparison';
+
+    % Outputs
+    parameters.loop_list.things_to_save.data_evaluated.dir = {[parameters.dir_exper 'corr fluor\only relevant corrs\' category '\'], 'comparison', '\'};
+    parameters.loop_list.things_to_save.data_evaluated.filename= {'average_by_nodes.mat'};
+    parameters.loop_list.things_to_save.data_evaluated.variable= {'average_by_nodes'}; 
+    parameters.loop_list.things_to_save.data_evaluated.level = 'comparison';
+
+    RunAnalysis({@EvaluateOnData}, parameters);
+end 
+
+
 %% Start with categorical
 
 % Steps needed:
